@@ -1,10 +1,3 @@
-# -*- coding: utf-8 -*-
-"""
-Created on Sat Dec 21 17:13:03 2024
-
-@author: Lenovo
-"""
-
 import os
 import pandas as pd
 import re
