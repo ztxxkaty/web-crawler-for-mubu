@@ -20,14 +20,15 @@ import openpyxl as op
 # In[0] parameter
 excel_path = 'mindmaps.xlsx'
 scroll_time = 10 # 根据页面中内容的多少而定。
-phone_num = "***" # 手机号（账户名）
-password = "***" # 密码
 # 如果页面中的内容很多，滚动时无法全部覆盖，可以适当调大滚动次数；
 # 如果页面中的内容很少，移动时会在底部停留很久，可以适当调小滚动次数
+phone_num = "***" # 手机号（账户名）
+password = "***" # 密码
 
-map_list = [
-    ("Home",[
-        'Cloakroom',
+mindmap_folder = "词典"
+mindmap_list = [
+    ("Home",[ # 一级文件夹
+        'Cloakroom', # 下属二级文件夹
         'Diningroom',
         'Drawingroom',
         'Garden',
@@ -125,9 +126,8 @@ for window in all_windows:
         break
 
 # 3.0 获取跳转链接
-# 3.1 打开词典文件夹
-title_ori_name = "词典"
-# title_ori_name = "英语"
+# 3.1 打开根文件夹
+title_ori_name = mindmap_folder
 
 html_content = driver.page_source # 获取html内容
 soup = BeautifulSoup(html_content, 'html.parser') # 解析html内容
@@ -154,7 +154,6 @@ for jj in range(1,len(map_list)+1):
     time.sleep(3)
     
     title_name = map_list[map_num][0]
-    # title_name = "test"
     html_content = driver.page_source # 获取html内容
     soup = BeautifulSoup(html_content, 'html.parser') # 解析html内容
     scroll_view_div = soup.find('div', id='js-documents-tree-scroll-view') # 获取跳转目录
@@ -192,20 +191,20 @@ for jj in range(1,len(map_list)+1):
         driver.get(url) # 打开链接
         time.sleep(3)
         
-        # 3.3.2 滚动页面，加载全部内容
-        # document.body.scrrollHeight
-        # driver.execute_script("window.scrollTo(0, 1500);")
-        # driver.execute_script("window.scrollTo(0, document.body.scrollHeight);")
-        # ans = driver.execute_script("return document.body.scrollHeight")
-        # driver.execute_script("window.scrollTop +=1000;")
-        
-        # 滚动scroll组件：选中scroll组件后，再移动
+        # 3.3.2 滚动scroll组件：选中scroll组件后，再移动
         scroll_div = driver.find_element(By.ID, "js-doc-wrap")
         for _ in range(scroll_time):
             driver.execute_script("arguments[0].scrollBy(0,200);", scroll_div)
             time.sleep(0.5)
 
       # test starts ----------------------------------
+        # 滚动页面，加载全部内容
+        # document.body.scrrollHeight
+        # driver.execute_script("window.scrollTo(0, 1500);")
+        # driver.execute_script("window.scrollTo(0, document.body.scrollHeight);")
+        # ans = driver.execute_script("return document.body.scrollHeight")
+        # driver.execute_script("window.scrollTop +=1000;")
+        
         # 从上向下滚动
         #   body = driver.find_element(By.TAG_NAME, 'body')
         # for _ in range(2):
@@ -276,74 +275,4 @@ for jj in range(1,len(map_list)+1):
         write_toExcel(span_contents, title_name, title_sub_name, excel_path)
         print(f"————————{title_name}下的{title_sub_name}对应的mindmap已写入excel中")
    
-# delete_sheet(excel_path, "Sheet")
 driver.quit()
-
-# In[3] 比对数据
-excel_path = 'mindmaps--20250101.xlsx'
-flag = 1
-for map_num in range(0,len(map_list)):
-    map_name = map_list[map_num][0]
-    for index in range(0,len(map_list[map_num][1])):
-        curr_map = map_list[map_num][1][index]
-        
-        # set the destination path
-        sheet_name = f"{curr_map}"
-        folder_path = f"Project_DailyLife_{map_name}_Prepare\{map_name}\Images_{map_name}\{curr_map}"
-    
-        # read excel
-        df = pd.read_excel(excel_path, sheet_name=sheet_name, usecols=[0])
-        words = df.iloc[:,0].dropna().str.lower().tolist()
-        words = [word.rstrip() for word in words] #去除字符末尾的空格
-        
-        # exam and record
-        unmatched_words = []
-        unpaired_pics = []
-        
-        image_files = [f for f in os.listdir(folder_path) if os.path.isfile(os.path.join(folder_path, f))]
-        image_names = [os.path.splitext(f)[0].lower() for f in image_files]
-        
-        for word in words:
-            image_name = f"{word}.jpg"
-            image_path = os.path.join(folder_path, image_name)
-            if not os.path.exists(image_path):
-                if re.search(r'\d',word): # 把带数字的字符去掉（带数字的是分类名）
-                    continue
-                # if any(char.isdigit for char in word):
-                #     continue
-                # for char in word:
-                #     print(f"{char}:::{char.isdigit}")
-                # print(f"end{word}")
-                unmatched_words.append(word)
-                
-        # print(f"\n对于{sheet_name}:\n")
-        
-        # report unmatched words
-        if unmatched_words:
-            print(f"\n对于{sheet_name},以下单词没有对应的图片：")
-            # print("以下单词没有对应的图片：")
-            for word in unmatched_words:
-                flag = 0
-                print(word)
-        # else:
-        #     print("所有单词均有对应图片\n")
-            
-        # report unpaired pictures
-        unpaired_pics = [name for name in image_names if name not in words]
-        if unpaired_pics:
-            print(f"\n对于{sheet_name},以下图片没有在思维导图中出现：")
-            # print("以下图片没有在思维导图中出现")
-            for image in unpaired_pics:
-                flag = 0
-                print(image)
-        # else:
-        #     print("所有图片都在思维导图中")
-if flag:
-    print("\n芜湖！恭喜！mindmap和图片完成了同步！")
-# for mm in range(0,len(ans1)):
-#     if(ans1[mm]!=ans2[mm]):
-#         print(mm)
-#         print(ans1[mm])
-#         print(ans2[mm])
-                    
-                
